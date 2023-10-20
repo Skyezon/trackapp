@@ -27,14 +27,13 @@ class _SplashState extends State<Splash>{
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
+            Text(
                 "Splash screen",
               style: TextStyle(fontSize: 24),
             )
           ],
         ),
       ),
-
     );
   }
 
