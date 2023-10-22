@@ -1,4 +1,3 @@
-
 import 'package:android/pages/search.dart';
 import 'package:flutter/material.dart';
 
@@ -9,11 +8,9 @@ class Splash extends StatefulWidget {
   State<StatefulWidget> createState() {
     return _SplashState();
   }
-
 }
 
-class _SplashState extends State<Splash>{
-
+class _SplashState extends State<Splash> {
   @override
   void initState() {
     super.initState();
@@ -28,7 +25,7 @@ class _SplashState extends State<Splash>{
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-                "Splash screen",
+              "Splash screen",
               style: TextStyle(fontSize: 24),
             )
           ],
@@ -39,7 +36,8 @@ class _SplashState extends State<Splash>{
 
   _navigateSearch() async {
     await Future.delayed(Duration(milliseconds: 1500)).then((value) => {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Search()))
-    });
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => Search()))
+        });
   }
 }
