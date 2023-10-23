@@ -1,3 +1,5 @@
+import 'package:android/data/database.dart';
+
 class Stop {
   static const String tableName = "stops";
 
@@ -43,9 +45,22 @@ class Stop {
     name = map[cName] as String,
     address = map[cAddress] as String,
     stopIndex = map[cStopIndex] as int,
-    stopStartTime = map[cStopStartTime] as DateTime,
-    stopEndTime = map[cStopEndTime] as DateTime,
+    stopStartTime = DateTime.tryParse(map[cStopStartTime].toString()),
+    stopEndTime = DateTime.tryParse(map[cStopEndTime].toString()),
     unloadingTime = map[cUnloadingTime] as int,
     deliveryNumber = map[cDeliveryNumber] as String;
+
+  static Future<Stop?> getStopByIndex(int index,String deliveryNumber) async {
+    db = await getDatabase();
+    var maps = await db!.query(Stop.getTableName(),
+    where: "${Stop.cDeliveryNumber} = '$deliveryNumber' and ${Stop.cStopIndex} = ?",
+      whereArgs: [index]
+    );
+    if (maps.length > 0){
+      return Stop.fromMap(maps.first);
+    }else{
+      return null;
+    }
+  }
 
 }

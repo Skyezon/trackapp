@@ -33,9 +33,9 @@ class Delivery {
 
    Delivery.fromMap(Map<String, Object?> map):
      deliveryNumber = map[cDeliveryNumber] as String,
-     startTime = map[cStartTime] as DateTime,
-     finishTime = map[cFinishTime] as DateTime,
-     plannedStartTime = map[cPlannedStartTime] as DateTime;
+     startTime = DateTime.tryParse(map[cStartTime].toString()),
+     finishTime = DateTime.tryParse(map[cFinishTime].toString()),
+     plannedStartTime = DateTime.parse(map[cPlannedStartTime].toString());
 
 
   static String getTableName() {
@@ -52,13 +52,11 @@ class Delivery {
      //query stops
      db = await getDatabase();
      List<Map> maps = await db!.query(Stop.getTableName(),
-     where: '${Stop.cDeliveryNumber} = $deliveryNumber'
+     where: "${Stop.cDeliveryNumber} = '$deliveryNumber'"
      );
      if (maps.length > 0){
        maps.forEach((element) { 
-         maps.forEach((element) {
           stops!.add(Stop.fromMap(element as Map<String, Object?>));
-         });
        });
      }
      return stops;
@@ -74,7 +72,7 @@ class Delivery {
     //query matrixs
     db = await getDatabase();
     List<Map> maps = await db!.query(Matrix.getTableName(),
-      where: '${Matrix.cDeliveryNumber} = $deliveryNumber'
+      where: "${Matrix.cDeliveryNumber} = '$deliveryNumber'"
     );
     if (maps.length > 0){
       maps.forEach(( element) {

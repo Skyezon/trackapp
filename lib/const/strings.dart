@@ -13,4 +13,5 @@ const DATABASE_FILE_NAME = "trackapp.db";
 const BASE_NAME = "base";
 
 //Error
+const DATA_EMPTY_ERR = "Please fill the form";
 const DATA_NOT_FOUND_ERR = "Data not found";

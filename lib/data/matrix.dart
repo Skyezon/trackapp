@@ -1,3 +1,5 @@
+import 'package:android/data/database.dart';
+
 class Matrix {
 
   static const String tableName = "matrixs";
@@ -33,5 +35,16 @@ class Matrix {
     length = map[cLength] as int,
     duration = map[cDuration] as int;
 
-
+  static Future<Matrix?> getByName(String name) async {
+    var db = await getDatabase();
+    var maps = await db!.query(Matrix.getTableName(),
+    where: "${Matrix.cName} = ?",
+      whereArgs: [name]
+    );
+    if (maps.length >0){
+      return Matrix.fromMap(maps.first);
+    }else{
+      return null;
+    }
+  }
 }
