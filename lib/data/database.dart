@@ -46,12 +46,12 @@ Future _onConfigure(Database db) async {
   await db.execute('PRAGMA foreign_keys = ON');
 }
 
-Future<Database?> getDatabase() async{
+Future<Database> getDatabase() async{
   if (db != null){
-    return db;
+    return db!;
   }
   db = await initDatabase();
-  return db;
+  return db!;
 }
 
 Future<Database> initDatabase() async {

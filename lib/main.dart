@@ -1,4 +1,5 @@
 import 'package:android/data/database.dart';
+import 'package:android/pages/search.dart';
 import 'package:android/pages/splash.dart';
 import 'package:flutter/material.dart';
 
@@ -36,7 +37,7 @@ class MyApp extends StatelessWidget {
             seedColor: Colors.deepPurpleAccent, brightness: Brightness.light),
         useMaterial3: true,
       ),
-      home: const Splash(),
+      home: const Search(),
     );
   }
 }

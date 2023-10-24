@@ -1,4 +1,6 @@
 
+import 'dart:developer';
+
 import 'package:android/const/strings.dart';
 import 'package:android/data/delivery.dart';
 import 'package:android/data/stop.dart';
@@ -14,14 +16,23 @@ class StopService{
     if (eta == null){
       return null;
     }
-    String? originDestination = await getFromToName(stopData);
+    String? originDestination = await getOriginToDestinationName(stopData);
     if (originDestination == null){
       return null;
     }
-    return eta.add(Duration(minutes: stopData.unloadingTime));
+
+    eta = eta.add(Duration(minutes: stopData.unloadingTime));
+
+    /*
+    if (systemTime.isAfter(eta)){
+      eta = systemTime;
+    }
+
+     */
+    return eta;
   }
 
-  static Future<String?> getFromToName(Stop stopData) async{
+  static Future<String?> getOriginToDestinationName(Stop stopData) async{
     String originName = "";
     String destinationName = stopData.name;
     if (stopData.stopIndex <= 1){
@@ -42,9 +53,10 @@ class StopService{
       startingDateTime = stopData.stopStartTime!;
     }else{
       if (stopData.stopIndex <= 1){
-        DateTime selectedDateTime = deliveryData.plannedStartTime.isBefore(systemTime) ? systemTime : deliveryData.plannedStartTime;
+        //DateTime selectedDateTime = deliveryData.plannedStartTime.isBefore(systemTime) ? systemTime : deliveryData.plannedStartTime;
+        DateTime selectedDateTime = deliveryData.plannedStartTime;
         startingDateTime = selectedDateTime;
-        startingDateTime.add(Duration(minutes: OVERHEAD_STARTING_TIME_MINUTE));
+        startingDateTime = startingDateTime.add(Duration(minutes: OVERHEAD_STARTING_TIME_MINUTE));
         return startingDateTime;
       }else{
         Stop? stopDataBefore = await Stop.getStopByIndex(stopData.stopIndex -1, stopData.deliveryNumber);
@@ -54,6 +66,10 @@ class StopService{
         DateTime? expectedStopFinishTimeBefore = await getExpectedStopFinishTime(stopDataBefore, deliveryData);
         if (expectedStopFinishTimeBefore == null){
           return null;
+        }
+
+        if (systemTime.isAfter(expectedStopFinishTimeBefore)){
+         expectedStopFinishTimeBefore = getNewExpectedStopFinishTime();
         }
        startingDateTime = expectedStopFinishTimeBefore;
         return startingDateTime;
@@ -71,7 +87,7 @@ class StopService{
       return null;
     }
 
-    String? originDestination = await getFromToName(stopData);
+    String? originDestination = await getOriginToDestinationName(stopData);
     if (originDestination == null){
       return null;
     }
@@ -80,8 +96,8 @@ class StopService{
      return null;
    }
 
-   DateTime etaDatetime = DateTime.fromMillisecondsSinceEpoch(startingDateTime.millisecondsSinceEpoch,isUtc: true);
-    etaDatetime.add(Duration(minutes: matrix.duration)) ;
+   DateTime etaDatetime = DateTime.fromMillisecondsSinceEpoch(startingDateTime.millisecondsSinceEpoch);
+    etaDatetime = etaDatetime.add(Duration(minutes: matrix.duration)) ;
 
     return etaDatetime;
   }
@@ -94,17 +110,36 @@ class StopService{
     return roundingMinutes(etaDatetime);
   }
 
-  static DateTime roundingMinutes(DateTime date){
-    final int remainder = date.minute % 5;
-    final int minutesToAdd = 5 - remainder;
-    final DateTime roundedDateTime = date.add(Duration(minutes: minutesToAdd));
-    return DateTime(
-      roundedDateTime.year,
-      roundedDateTime.month,
-      roundedDateTime.day,
-      roundedDateTime.hour,
-      roundedDateTime.minute,
-    );
+  static DateTime getNewETA(Stop stopData){
+    return systemTime.subtract(Duration(minutes: stopData.unloadingTime));
+  }
+
+  static DateTime getRoundedNewETA(Stop stopData){
+    return roundingMinutes(getNewETA(stopData));
+  }
+
+  static DateTime getNewExpectedStopFinishTime(){
+    return systemTime;
+  }
+
+  static DateTime roundingMinutes(DateTime dateTime) {
+
+    int minutes = dateTime.minute;
+
+    int remainder = minutes % 5;
+
+    if (remainder >= 3) {
+      minutes = minutes - remainder + 5;
+      if (minutes == 60) {
+        minutes = 0;
+        dateTime = dateTime.add(Duration(hours: 1));
+      }
+    } else {
+      minutes = minutes - remainder;
+    }
+
+    return DateTime(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, minutes);
+
   }
 
   static Future<String> getTimeWindow(Stop stopData, Delivery deliveryData) async {
@@ -113,19 +148,44 @@ class StopService{
       return "ERROR";
     }
     DateTime res;
-    if (expectedStopTime.isBefore(systemTime)){
+    if (systemTime.isAfter(expectedStopTime)){
       //New ETA
-      res = systemTime.subtract(Duration(minutes: stopData.unloadingTime));
-      res = roundingMinutes(res);
+      res = getRoundedNewETA(stopData);
     }else{
       var temp = await getRoundedETA(stopData,deliveryData);
       if (temp == null){
         return "ERROR";
       }
       res = temp;
-      res.add(const Duration(minutes: 15));
     }
-    return DateFormat.Hm().format(res);
+
+    const Duration durationSpec = Duration(minutes: 15);
+    return'${DateFormat.Hm().format(res.copyWith().subtract(durationSpec))} - ${DateFormat.Hm().format(res.copyWith().add(durationSpec))}';
+    //return '${DateFormat.Hm().format(res)}';
+
+  }
+
+  static Future<void> switchOrder(int index1, index2, String deliveryNumber) async{
+    var stop1 = await Stop.getStopByIndex(index1, deliveryNumber);
+    var stop2 = await Stop.getStopByIndex(index2, deliveryNumber);
+
+    if (!isValidToChangeOrder(stop1) || !isValidToChangeOrder(stop2)){
+      print("invalid order change: one or both stop is still on progress");
+      return;
+    }
+
+    await Stop.updateOrder(stop1!.id, stop2!.stopIndex);
+    await Stop.updateOrder(stop2!.id, stop1!.stopIndex);
+  }
+
+  static bool isValidToChangeOrder(Stop? stopData) {
+    if (stopData == null){
+      return false;
+    }
+    if (stopData.stopStartTime != null || stopData.stopEndTime != null){
+      return false;
+    }
+    return true;
   }
 
 }

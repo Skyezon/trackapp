@@ -5,6 +5,7 @@ import 'package:android/data/stop.dart';
 import 'package:android/pages/current_stop.dart';
 import 'package:android/services/delivery_service.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class StopList extends StatefulWidget {
   final String selectedDeliveryNumber;
@@ -18,14 +19,29 @@ class StopList extends StatefulWidget {
 class _StopListState extends State<StopList> {
   late final Future<Delivery?> _deliveryData;
 
-  _navigateCurrentStop(AsyncSnapshot<Delivery?> snapshotStop) {
-    if (!snapshotStop.hasData){
-      //error
+  _navigateCurrentStop(AsyncSnapshot<Delivery?> snapshot) async {
+    if (!snapshot.hasData){
       return;
     }
+    List<Stop>? stopList = await snapshot.data!.getStops();
+    if (stopList == null){
+      return;
+    }
+    stopList.sort((a,b) => a.stopIndex.compareTo(b.stopIndex));
 
-    Navigator.push(
-        context, MaterialPageRoute(builder: (context) => CurrentDelivery()));
+    Stop selFirst = stopList.firstWhere((element) => (element.stopStartTime == null || element.stopEndTime == null));
+    if(selFirst.stopIndex == stopList.length){
+      //last one
+      if (context.mounted){
+        Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentDelivery(currentStop: selFirst, nextStop: null,deliveryData: snapshot.data!)));
+      }
+      return;
+    }
+    //bring the next one
+    Stop selNext = stopList.firstWhere((element) => (element.stopIndex == (selFirst.stopIndex + 1)));
+    if (context.mounted){
+      Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentDelivery(currentStop: selFirst, nextStop: selNext, deliveryData: snapshot.data!)));
+    }
   }
 
   @override
@@ -33,6 +49,13 @@ class _StopListState extends State<StopList> {
     //get delivery & stop data
     _deliveryData = DeliveryService.getDelivery(widget.selectedDeliveryNumber);
     super.initState();
+  }
+
+  _updateFromItemList(){
+    //changes order of the stop;
+    setState(() {
+
+    });
   }
 
 
@@ -63,21 +86,15 @@ class _StopListState extends State<StopList> {
                   if (!snapshotStop.hasData){
                     return const Expanded(flex: 6,child: Center(child: CircularProgressIndicator()));
                   }
+                  //order Stop list by stopIndex
+                  snapshotStop.data!.sort((a,b) => a.stopIndex.compareTo(b.stopIndex));
                   return Expanded(
                     flex: 6,
                     child: ReorderableListView(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shrinkWrap: true,
                       onReorder: (oldIndex, newIndex) {
-                        setState(() {
-                          if (oldIndex < newIndex) {
-                            newIndex -= 1;
-                          }
-                          final Stop item = snapshotStop.data!.removeAt(
-                              oldIndex);
-                          snapshotStop.data!.insert(newIndex, item);
-                        });
-                        //TODO : reupdate time window inside list
+
                       },
                       header: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -89,12 +106,12 @@ class _StopListState extends State<StopList> {
                                 .textTheme
                                 .headlineSmall,
                           ),
-                          Text(snapshot!.data!.plannedStartTime.toIso8601String())
+                          Text(DeliveryService.printStartTimeBasedOnSystemTime(snapshot.data!))
                         ],
                       ),
                       children: <StopListItem>[
                         for(var stop in snapshotStop!.data!)
-                          StopListItem(data: stop,deliveryData: snapshot.data!)
+                          StopListItem(data: stop,deliveryData: snapshot.data!, refreshList: _updateFromItemList)
                       ],
                     ),
                   );

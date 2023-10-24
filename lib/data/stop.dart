@@ -40,6 +40,10 @@ class Stop {
     return map;
   }
 
+  void setIndex(int newIndex){
+   stopIndex = newIndex;
+  }
+
   Stop.fromMap(Map<String, Object?> map):
     id = map[cId] as int,
     name = map[cName] as String,
@@ -61,6 +65,43 @@ class Stop {
     }else{
       return null;
     }
+  }
+
+
+  static Future<Stop?> getById(int id) async{
+   db = await getDatabase();
+   var maps = await db!.query(Stop.getTableName(),
+    where: "${Stop.cId} = ?",
+   whereArgs: [id]
+   );
+   if (maps.length > 0){
+     return Stop.fromMap(maps.first);
+   }
+   return null;
+  }
+
+  static Future<void> updateOrder(int id, int indexTo ) async {
+    if (indexTo <=0){
+      print("invalid index");
+      return null;
+    }
+    db = await getDatabase();
+    Stop? selStop = await getById(id);
+    if (selStop == null){
+      print("error selStop empty");
+      return;
+    }
+
+    if (selStop.stopStartTime != null || selStop.stopEndTime != null){
+      print("cannot change ongoing delivery stop");
+      return;
+    }
+    selStop.setIndex(indexTo);
+
+    await db!.update(Stop.getTableName(), selStop.toMap(),
+    where: 'id = ?',
+      whereArgs: [id]
+    );
   }
 
 }

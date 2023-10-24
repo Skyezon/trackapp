@@ -9,8 +9,9 @@ class StopListItem extends StatefulWidget {
   final Key key;
   final Stop data;
   final Delivery deliveryData;
+  final Function refreshList;
 
-  StopListItem({required this.data,required this.deliveryData }): key = ValueKey(data.stopIndex);
+  StopListItem({required this.data,required this.deliveryData, required this.refreshList}): key = ValueKey(data.id);
 
   @override
   State<StopListItem> createState() => _StopListItemState();
@@ -19,15 +20,30 @@ class StopListItem extends StatefulWidget {
 class _StopListItemState extends State<StopListItem> {
   late String timeWindow = "";
 
-  _increaseOrder() {
-
-
+  _increaseOrder(Stop stopData) async {
+    int indexAfter = stopData.stopIndex + 1;
+    List<Stop>? stops = await widget.deliveryData.getStops();
+    if (indexAfter > stops!.length){
+      //error out of bound;
+      print("index now : ${stopData.stopIndex} target : $indexAfter");
+      print('error out of bound');
+      return;
+    }
+     await StopService.switchOrder(stopData.stopIndex, indexAfter, stopData.deliveryNumber);
+    widget.refreshList();
   }
 
-  _decreaseOrder() {
-
+  _decreaseOrder(Stop stopData) async {
+    int indexBefore = stopData.stopIndex -1;
+    if (indexBefore <= 0){
+      //error out of bound
+      print("index now : ${stopData.stopIndex} target : $indexBefore");
+      print("error dec out of bound");
+      return;
+    }
+     await StopService.switchOrder(stopData.stopIndex, indexBefore, stopData.deliveryNumber);
+    widget.refreshList();
   }
-
 
   _getRequiredData() async{
     var tempTimewindow = await StopService.getTimeWindow(widget.data, widget.deliveryData);
@@ -40,6 +56,12 @@ class _StopListItemState extends State<StopListItem> {
   void initState() {
     _getRequiredData();
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant StopListItem oldWidget) {
+    _getRequiredData();
+    super.didUpdateWidget(oldWidget);
   }
 
 
@@ -97,10 +119,10 @@ class _StopListItemState extends State<StopListItem> {
                 IconButton(
                   icon: const Icon(Icons.arrow_circle_up),
                   iconSize: 32,
-                  onPressed: _decreaseOrder,
+                  onPressed: () => _decreaseOrder(widget.data),
                 ),
                 IconButton(
-                    onPressed: _increaseOrder,
+                    onPressed: () => _increaseOrder(widget.data),
                     iconSize: 32,
                     icon: const Icon(Icons.arrow_circle_down))
               ],

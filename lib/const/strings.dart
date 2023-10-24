@@ -12,6 +12,10 @@ const DATABASE_FILE_NAME = "trackapp.db";
 
 const BASE_NAME = "base";
 
+const FINISH_CURRENT_STOP_BUTTON_TEXT = Text("Finish current stop");
+const FINISH_FINAL_STOP_BUTTON_TEXT = Text("Finish Delivery");
+const REORDER_BUTTON_TEXT = Text("Reorder stops");
+
 //Error
 const DATA_EMPTY_ERR = "Please fill the form";
 const DATA_NOT_FOUND_ERR = "Data not found";
