@@ -13,7 +13,3 @@ Duration REALTIME_REFRESH_DURATION = Duration(seconds: 1);
 //if true will recreate new database everytime the app run
 //if false, database will persist
 bool NEW_DATABASE_EVERY_RUN = false;
-
-
-
-

@@ -22,11 +22,11 @@ class StopList extends StatefulWidget {
 }
 
 class _StopListState extends State<StopList> {
-  late Future<Delivery?> _deliveryData;
-  late Timer _timer;
-  late Future<List<Stop>> _stopDataList;
-  late String _startTime;
-  bool _isSnackbarShown = false;
+   Future<Delivery?> _deliveryData = Future(() => null);
+   Timer _timer = Timer(Duration(),(){});
+   Future<List<Stop>> _stopDataList = Future(() => []);
+   String _startTime = "";
+   bool _isSnackbarShown = false;
 
   _navigateCurrentStop(AsyncSnapshot<Delivery?> snapshot) async {
     if (!snapshot.hasData){
