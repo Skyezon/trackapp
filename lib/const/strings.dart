@@ -20,4 +20,4 @@ const REORDER_BUTTON_TEXT = Text("Reorder stops");
 //Error
 const DATA_EMPTY_ERR = "Please fill the form";
 const DATA_NOT_FOUND_ERR = "Data not found";
-const INVALID_ORDER_CHANGE = "One or both stop have been started, cannot change order";
+const INVALID_ORDER_CHANGE = "One of the stop have been started, cannot change order";

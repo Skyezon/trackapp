@@ -138,4 +138,16 @@ class Stop {
   }
 
 
+  static Future<void> updateDataAsList(List<Stop> stopDataList)async{
+    db = await getDatabase();
+    var batch = db!.batch();
+    for(Stop stopData in stopDataList){
+      batch.update(Stop.getTableName(), stopData.toMap(),
+      where: "${Stop.cId} = ${stopData.id}"
+      );
+    }
+    await batch.commit();
+  }
+
+
 }

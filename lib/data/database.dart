@@ -68,7 +68,7 @@ Future<Database> initDatabase() async {
   return database;
 }
 
- void seedDatabase() async{
+void seedData1() async{
 
   db = await getDatabase();
 
@@ -81,17 +81,17 @@ Future<Database> initDatabase() async {
 
   String firstDeliveryNumber = "A91JK0S7";
   List<Map> maps =  await db!.query(Delivery.getTableName(),
-  columns: [Delivery.cDeliveryNumber],
-    where: '${Delivery.cDeliveryNumber} = ?',
-    whereArgs: [firstDeliveryNumber]
+      columns: [Delivery.cDeliveryNumber],
+      where: '${Delivery.cDeliveryNumber} = ?',
+      whereArgs: [firstDeliveryNumber]
   );
   if (maps.length > 0){
     return;
   }
 
   //insert delivery
-   await db!.transaction((txn) async {
-      await txn.rawInsert("""
+  await db!.transaction((txn) async {
+    await txn.rawInsert("""
      INSERT INTO ${Delivery.getTableName()}(
         ${Delivery.cDeliveryNumber},
         ${Delivery.cStartTime},
@@ -104,11 +104,11 @@ Future<Database> initDatabase() async {
      '${DateTime.now().add(const Duration(minutes: 0)).toIso8601String()}'
      )
       """);
-     print("inserted delivery : ${firstDeliveryNumber}") ;
+    print("inserted delivery : ${firstDeliveryNumber}") ;
 
-     //insert stops
-     String firstStopName = "stop_1";
-     await txn.rawInsert("""
+    //insert stops
+    String firstStopName = "stop_1";
+    await txn.rawInsert("""
      INSERT INTO ${Stop.getTableName()}(
        ${Stop.cName},
        ${Stop.cAddress},
@@ -127,11 +127,11 @@ Future<Database> initDatabase() async {
        '${firstDeliveryNumber}'
      )
      """);
-     print("inserted stop : $firstStopName");
+    print("inserted stop : $firstStopName");
 
-     String secondStopName = "stop_2";
+    String secondStopName = "stop_2";
 
-     await txn.rawInsert("""
+    await txn.rawInsert("""
      INSERT INTO ${Stop.getTableName()}(
        ${Stop.cName},
        ${Stop.cAddress},
@@ -150,11 +150,11 @@ Future<Database> initDatabase() async {
         '${firstDeliveryNumber}'
      )
      """);
-     print("inserted stop : $secondStopName");
+    print("inserted stop : $secondStopName");
 
-     //inert matrixs
+    //inert matrixs
 
-     await txn.rawInsert("""
+    await txn.rawInsert("""
       INSERT INTO ${Matrix.getTableName()}(
       ${Matrix.cDeliveryNumber},
       ${Matrix.cName},
@@ -168,5 +168,346 @@ Future<Database> initDatabase() async {
         ('$firstDeliveryNumber','$firstStopName-$secondStopName',20000,10),
         ('$firstDeliveryNumber','$secondStopName-$firstStopName',20000,10) 
      """);
-   });
+  });
+}
+
+void seedData2() async{
+
+  db = await getDatabase();
+
+  if(NEW_DATABASE_EVERY_RUN){
+    String path = await getDatabasesPath();
+    await deleteDatabase(path + DATABASE_FILE_NAME);
+    db = null;
+    db = await getDatabase();
+  }
+
+  String firstDeliveryNumber = "TEST12345";
+  List<Map> maps =  await db!.query(Delivery.getTableName(),
+      columns: [Delivery.cDeliveryNumber],
+      where: '${Delivery.cDeliveryNumber} = ?',
+      whereArgs: [firstDeliveryNumber]
+  );
+  if (maps.length > 0){
+    return;
+  }
+
+  //insert delivery
+  await db!.transaction((txn) async {
+  await txn.rawInsert("""
+     INSERT INTO ${Delivery.getTableName()}(
+        ${Delivery.cDeliveryNumber},
+        ${Delivery.cStartTime},
+        ${Delivery.cFinishTime},
+        ${Delivery.cPlannedStartTime}
+     ) VALUES (
+     '$firstDeliveryNumber',
+     '',
+     '',
+     '${DateTime.now().add(const Duration(minutes: 0)).toIso8601String()}'
+     )
+      """);
+  print("inserted delivery : ${firstDeliveryNumber}") ;
+
+  //insert stops
+  String firstStopName = "stop_1";
+  await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+       '$firstStopName',
+       'abc street',
+       '1',
+       '',
+       '',
+       10,
+       '${firstDeliveryNumber}'
+     )
+     """);
+  print("inserted stop : $firstStopName");
+
+  String secondStopName = "stop_2";
+
+  await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+        '$secondStopName',
+        'def street',
+        '2',
+        '',
+        '',
+        '20',
+        '${firstDeliveryNumber}'
+     )
+     """);
+  print("inserted stop : $secondStopName");
+
+
+  String thirdStopName = "stop_3";
+
+  await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+        '$thirdStopName',
+        'ghi street',
+        '3',
+        '',
+        '',
+        '30',
+        '${firstDeliveryNumber}'
+     )
+     """);
+  print("inserted stop : $thirdStopName");
+
+
+  //inert matrixs
+
+  await txn.rawInsert("""
+      INSERT INTO ${Matrix.getTableName()}(
+      ${Matrix.cDeliveryNumber},
+      ${Matrix.cName},
+      ${Matrix.cLength},
+      ${Matrix.cDuration}
+      ) VALUES 
+        ('$firstDeliveryNumber','$BASE_NAME-$firstStopName',50000,20),
+        ('$firstDeliveryNumber','$BASE_NAME-$secondStopName',55000,40),
+        ('$firstDeliveryNumber','$firstStopName-$BASE_NAME',48000,50),
+        ('$firstDeliveryNumber','$secondStopName-$BASE_NAME',53000,36),
+        ('$firstDeliveryNumber','$firstStopName-$secondStopName',20000,20),
+        ('$firstDeliveryNumber','$secondStopName-$firstStopName',20000,20),
+        ('$firstDeliveryNumber','$BASE_NAME-$thirdStopName',123,40),
+        ('$firstDeliveryNumber','$firstStopName-$thirdStopName',123,50),
+        ('$firstDeliveryNumber','$secondStopName-$thirdStopName',123,60),
+        ('$firstDeliveryNumber','$thirdStopName-$BASE_NAME',123,70),
+        ('$firstDeliveryNumber','$thirdStopName-$firstStopName',123,80),
+        ('$firstDeliveryNumber','$thirdStopName-$secondStopName',123,90)
+     """);
+  });
+}
+
+void seedData3() async{
+  db = await getDatabase();
+
+  if(NEW_DATABASE_EVERY_RUN){
+    String path = await getDatabasesPath();
+    await deleteDatabase(path + DATABASE_FILE_NAME);
+    db = null;
+    db = await getDatabase();
+  }
+
+  String firstDeliveryNumber = "TEST55555";
+  List<Map> maps =  await db!.query(Delivery.getTableName(),
+      columns: [Delivery.cDeliveryNumber],
+      where: '${Delivery.cDeliveryNumber} = ?',
+      whereArgs: [firstDeliveryNumber]
+  );
+  if (maps.length > 0){
+    return;
+  }
+
+  //insert delivery
+  await db!.transaction((txn) async {
+    await txn.rawInsert("""
+     INSERT INTO ${Delivery.getTableName()}(
+        ${Delivery.cDeliveryNumber},
+        ${Delivery.cStartTime},
+        ${Delivery.cFinishTime},
+        ${Delivery.cPlannedStartTime}
+     ) VALUES (
+     '$firstDeliveryNumber',
+     '',
+     '',
+     '${DateTime.now().add(const Duration(minutes: 0)).toIso8601String()}'
+     )
+      """);
+    print("inserted delivery : ${firstDeliveryNumber}") ;
+
+    //insert stops
+    String firstStopName = "stop_1";
+    await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+       '$firstStopName',
+       'abc street',
+       '1',
+       '',
+       '',
+       10,
+       '${firstDeliveryNumber}'
+     )
+     """);
+    print("inserted stop : $firstStopName");
+
+    String secondStopName = "stop_2";
+
+    await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+        '$secondStopName',
+        'def street',
+        '2',
+        '',
+        '',
+        '20',
+        '${firstDeliveryNumber}'
+     )
+     """);
+    print("inserted stop : $secondStopName");
+
+
+    String thirdStopName = "stop_3";
+
+    await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+        '$thirdStopName',
+        'ghi street',
+        '3',
+        '',
+        '',
+        '30',
+        '${firstDeliveryNumber}'
+     )
+     """);
+    print("inserted stop : $thirdStopName");
+
+    String fourthStop = "stop_4";
+
+    await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+        '$fourthStop',
+        'jkl street',
+        '4',
+        '',
+        '',
+        '40',
+        '${firstDeliveryNumber}'
+     )
+     """);
+    print("inserted stop : $fourthStop");
+
+    String fifthStop = "stop_5";
+
+    await txn.rawInsert("""
+     INSERT INTO ${Stop.getTableName()}(
+       ${Stop.cName},
+       ${Stop.cAddress},
+       ${Stop.cStopIndex},
+       ${Stop.cStopStartTime},
+       ${Stop.cStopEndTime},
+       ${Stop.cUnloadingTime},
+       ${Stop.cDeliveryNumber} 
+     ) VALUES (
+        '$fifthStop',
+        'mno street',
+        '5',
+        '',
+        '',
+        '50',
+        '${firstDeliveryNumber}'
+     )
+     """);
+    print("inserted stop : $fifthStop");
+
+
+    //inert matrixs
+
+    await txn.rawInsert("""
+      INSERT INTO ${Matrix.getTableName()}(
+      ${Matrix.cDeliveryNumber},
+      ${Matrix.cName},
+      ${Matrix.cLength},
+      ${Matrix.cDuration}
+      ) VALUES 
+        ('$firstDeliveryNumber','$BASE_NAME-$firstStopName',50000,20),
+        ('$firstDeliveryNumber','$BASE_NAME-$secondStopName',55000,40),
+        ('$firstDeliveryNumber','$firstStopName-$BASE_NAME',48000,50),
+        ('$firstDeliveryNumber','$secondStopName-$BASE_NAME',53000,36),
+        ('$firstDeliveryNumber','$firstStopName-$secondStopName',20000,20),
+        ('$firstDeliveryNumber','$secondStopName-$firstStopName',20000,20),
+        ('$firstDeliveryNumber','$BASE_NAME-$thirdStopName',123,40),
+        ('$firstDeliveryNumber','$firstStopName-$thirdStopName',123,50),
+        ('$firstDeliveryNumber','$secondStopName-$thirdStopName',123,60),
+        ('$firstDeliveryNumber','$thirdStopName-$BASE_NAME',123,70),
+        ('$firstDeliveryNumber','$thirdStopName-$firstStopName',123,80),
+        ('$firstDeliveryNumber','$thirdStopName-$secondStopName',123,90),
+        
+        ('$firstDeliveryNumber','$BASE_NAME-$fourthStop',123,10),
+        ('$firstDeliveryNumber','$firstStopName-$fourthStop',123,70),
+        ('$firstDeliveryNumber','$secondStopName-$fourthStop',123,30),
+        ('$firstDeliveryNumber','$thirdStopName-$fourthStop',123,30),
+        
+        ('$firstDeliveryNumber','$fourthStop-$BASE_NAME',123,80),
+        ('$firstDeliveryNumber','$fourthStop-$firstStopName',123,190),
+        ('$firstDeliveryNumber','$fourthStop-$secondStopName',123,10),
+        ('$firstDeliveryNumber','$fourthStop-$thirdStopName',123,80),
+        
+        ('$firstDeliveryNumber','$BASE_NAME-$fifthStop',123,10),
+        ('$firstDeliveryNumber','$firstStopName-$fifthStop',123,50),
+        ('$firstDeliveryNumber','$secondStopName-$fifthStop',123,40),
+        ('$firstDeliveryNumber','$thirdStopName-$fifthStop',123,10),
+        ('$firstDeliveryNumber','$fourthStop-$fifthStop',123,20),
+        
+        ('$firstDeliveryNumber','$fifthStop-$BASE_NAME',123,10),
+        ('$firstDeliveryNumber','$fifthStop-$firstStopName',123,20),
+        ('$firstDeliveryNumber','$fifthStop-$secondStopName',123,30),
+        ('$firstDeliveryNumber','$fifthStop-$thirdStopName',123,40),
+        ('$firstDeliveryNumber','$fifthStop-$fourthStop',123,50)
+     """);
+  });
+}
+
+ void seedDatabase() async{
+  seedData1();
+  seedData2();
+  seedData3();
 }

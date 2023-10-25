@@ -35,11 +35,11 @@ class Matrix {
     length = map[cLength] as int,
     duration = map[cDuration] as int;
 
-  static Future<Matrix?> getByName(String name) async {
+  static Future<Matrix?> get(String name, String deliveryNumber) async {
     var db = await getDatabase();
     var maps = await db!.query(Matrix.getTableName(),
-    where: "${Matrix.cName} = ?",
-      whereArgs: [name]
+    where: "${Matrix.cName} = ? and ${Matrix.cDeliveryNumber} = ?",
+      whereArgs: [name, deliveryNumber]
     );
     if (maps.length >0){
       return Matrix.fromMap(maps.first);

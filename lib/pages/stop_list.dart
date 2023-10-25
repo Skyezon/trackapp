@@ -26,6 +26,7 @@ class _StopListState extends State<StopList> {
   late Timer _timer;
   late Future<List<Stop>> _stopDataList;
   late String _startTime;
+  bool _isSnackbarShown = false;
 
   _navigateCurrentStop(AsyncSnapshot<Delivery?> snapshot) async {
     if (!snapshot.hasData){
@@ -132,8 +133,19 @@ class _StopListState extends State<StopList> {
                     child: ReorderableListView(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shrinkWrap: true,
-                      onReorder: (oldIndex, newIndex) {
-
+                      onReorder: (oldIndex, newIndex) async{
+                        oldIndex++;
+                        newIndex++;
+                       var res = await StopService.stackingOrderUpdate(snapshotStop.data!, oldIndex, newIndex);
+                       if (res != null){
+                         if (context.mounted){
+                           if (!_isSnackbarShown){
+                             ScaffoldMessenger.of(context).showSnackBar(res).closed.then((value) => _isSnackbarShown = false);
+                           }
+                         }
+                         return;
+                       }
+                        _refreshList();
                       },
                       header: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,

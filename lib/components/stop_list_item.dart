@@ -6,7 +6,6 @@ import 'package:android/services/stop_service.dart';
 import 'package:flutter/material.dart';
 
 import '../data/delivery.dart';
-import 'my_snackbar.dart';
 
 class StopListItem extends StatefulWidget {
   final Key key;

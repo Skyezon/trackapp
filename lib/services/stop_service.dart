@@ -95,7 +95,7 @@ class StopService{
     if (originDestination == null){
       return null;
     }
-    Matrix? matrix = await Matrix.getByName(originDestination);
+    Matrix? matrix = await Matrix.get(originDestination,deliveryData.deliveryNumber);
    if (matrix == null){
      return null;
    }
@@ -205,6 +205,44 @@ class StopService{
 
   static Future<void> endCurrentStopDelivery(Stop stopData) async{
     await Stop.endCurrentStopDelivery(stopData);
+  }
+
+  static Future<SnackBar?> stackingOrderUpdate(List<Stop> stopDataList, int oldIndex, int targetIndex)async {
+    Stop selStop = stopDataList.firstWhere((element) => (oldIndex == element.stopIndex));
+    if (selStop.stopStartTime != null || selStop.stopEndTime != null){
+      return ErrorSnackbar(INVALID_ORDER_CHANGE);
+
+    }
+    if (targetIndex < oldIndex){
+      //print("go up in the list") ;
+     //from newIndex to oldIndex -1 , increase the indexof each element inclusive;
+     for (Stop stopData in stopDataList){
+       if (stopData.stopIndex >= targetIndex && stopData.stopIndex <= oldIndex -1 ){
+         if (stopData.stopStartTime != null || stopData.stopEndTime != null){
+           //return error
+          return ErrorSnackbar(INVALID_ORDER_CHANGE);
+         }
+         stopData.stopIndex++;
+       }
+     }
+    }else{
+      targetIndex--;
+      //print("go down in the list") ;
+      //from oldindex +1 to newIndex, decrease the indexof each element inclusive;
+      for (Stop stopData in stopDataList){
+        if (stopData.stopIndex >= oldIndex + 1 && stopData.stopIndex <= targetIndex ){
+          if (stopData.stopStartTime != null || stopData.stopEndTime != null){
+            return ErrorSnackbar(INVALID_ORDER_CHANGE);
+          }
+          stopData.stopIndex--;
+        }
+      }
+    }
+    selStop.stopIndex = targetIndex;
+
+    //just update everything as the updatedlist
+    await Stop.updateDataAsList(stopDataList);
+    return null;
   }
 
 }
