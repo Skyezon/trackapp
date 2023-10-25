@@ -35,4 +35,12 @@ class DeliveryService{
    }
   }
 
+  static Future<void> startDelivery(Delivery deliveryData) async{
+    await Delivery.startDelivery(deliveryData);
+  }
+
+  static Future<void> endDelivery(Delivery deliveryData) async{
+    await Delivery.endDelivery(deliveryData);
+  }
+
 }

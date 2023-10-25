@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:android/components/stop_list_item.dart';
 import 'package:android/const/strings.dart';
 import 'package:android/data/delivery.dart';
 import 'package:android/data/stop.dart';
+import 'package:android/env.dart';
 import 'package:android/pages/current_stop.dart';
+import 'package:android/pages/search.dart';
 import 'package:android/services/delivery_service.dart';
+import 'package:android/services/stop_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -17,12 +22,25 @@ class StopList extends StatefulWidget {
 }
 
 class _StopListState extends State<StopList> {
-  late final Future<Delivery?> _deliveryData;
+  late Future<Delivery?> _deliveryData;
+  late Timer _timer;
+  late Future<List<Stop>> _stopDataList;
+  late String _startTime;
 
   _navigateCurrentStop(AsyncSnapshot<Delivery?> snapshot) async {
     if (!snapshot.hasData){
       return;
     }
+   if(snapshot.data!.finishTime != null){
+     //means delivery completed and if button push will go back to search delivery number;
+     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Search()));
+   }
+
+   if (snapshot.data!.startTime == null){
+     DeliveryService.startDelivery(snapshot.data!);
+   }
+
+
     List<Stop>? stopList = await snapshot.data!.getStops();
     if (stopList == null){
       return;
@@ -30,32 +48,53 @@ class _StopListState extends State<StopList> {
     stopList.sort((a,b) => a.stopIndex.compareTo(b.stopIndex));
 
     Stop selFirst = stopList.firstWhere((element) => (element.stopStartTime == null || element.stopEndTime == null));
+
     if(selFirst.stopIndex == stopList.length){
       //last one
+      await StopService.startCurrentStopDelivery(selFirst);
       if (context.mounted){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentDelivery(currentStop: selFirst, nextStop: null,deliveryData: snapshot.data!)));
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentDelivery(currentStop: selFirst, nextStop: null,deliveryData: snapshot.data!)));
+        _refreshList();
       }
       return;
     }
     //bring the next one
     Stop selNext = stopList.firstWhere((element) => (element.stopIndex == (selFirst.stopIndex + 1)));
+    await StopService.startCurrentStopDelivery(selFirst);
     if (context.mounted){
-      Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentDelivery(currentStop: selFirst, nextStop: selNext, deliveryData: snapshot.data!)));
+      await Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentDelivery(currentStop: selFirst, nextStop: selNext, deliveryData: snapshot.data! )));
+      _refreshList();
     }
   }
 
   @override
   void initState() {
-    //get delivery & stop data
-    _deliveryData = DeliveryService.getDelivery(widget.selectedDeliveryNumber);
-    super.initState();
+    _refreshList();
+    _timer = Timer.periodic(REALTIME_REFRESH_DURATION, (Timer t) {
+      if(mounted){
+        _refreshList();
+      }
+    });
   }
 
-  _updateFromItemList(){
-    //changes order of the stop;
-    setState(() {
 
-    });
+  _refreshList()async {
+    final _newDeliveryData = await DeliveryService.getDelivery(widget.selectedDeliveryNumber);
+    final _newGetStopData = await _newDeliveryData!.getStops();
+    final _newStartTime = await DeliveryService.printStartTimeBasedOnSystemTime(_newDeliveryData);
+    if (mounted){
+      setState(() {
+        _deliveryData = Future.value(_newDeliveryData);
+        _stopDataList = Future.value(_newGetStopData);
+        _startTime = _newStartTime;
+      }); 
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
   }
 
 
@@ -81,7 +120,7 @@ class _StopListState extends State<StopList> {
           return Scaffold(
               appBar: myAppbar,
               body: Column(children: [
-                FutureBuilder(future: snapshot.data!.getStops(), builder:
+                FutureBuilder(future: _stopDataList, builder:
                     (context, AsyncSnapshot<List<Stop>?> snapshotStop) {
                   if (!snapshotStop.hasData){
                     return const Expanded(flex: 6,child: Center(child: CircularProgressIndicator()));
@@ -106,12 +145,12 @@ class _StopListState extends State<StopList> {
                                 .textTheme
                                 .headlineSmall,
                           ),
-                          Text(DeliveryService.printStartTimeBasedOnSystemTime(snapshot.data!))
+                          Text(_startTime)
                         ],
                       ),
                       children: <StopListItem>[
                         for(var stop in snapshotStop!.data!)
-                          StopListItem(data: stop,deliveryData: snapshot.data!, refreshList: _updateFromItemList)
+                          StopListItem(data: stop,deliveryData: snapshot.data!, refreshList: _refreshList)
                       ],
                     ),
                   );
@@ -123,9 +162,21 @@ class _StopListState extends State<StopList> {
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: ElevatedButton(
                           onPressed: () => _navigateCurrentStop(snapshot),
-                          //TODO : if last stop then change text
-                          child: FIRST_DELIVERY_TEXT)),
-                )
+                          child: ((){
+                            if (snapshot.data!.startTime == null){
+                              return FIRST_DELIVERY_TEXT;
+                            }else{
+                              if (snapshot.data!.finishTime == null){
+                                return WHILE_DELIVERY_TEXT;
+                              }else{
+                                return BACK_TO_SEARCH_TEXT;
+                              }
+                            }
+                          }())
+                      )
+                  ),
+                ),
+                SizedBox(height: 48)
               ]));
         });
   }

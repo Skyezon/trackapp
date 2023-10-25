@@ -1,3 +1,4 @@
+import 'package:android/components/my_snackbar.dart';
 import 'package:android/const/strings.dart';
 import 'package:android/data/delivery.dart';
 import 'package:android/pages/stop_list.dart';
@@ -22,7 +23,6 @@ class _SearchState extends State<Search> {
   }
 
   String? _validator(value)  {
-      //NOT PRIORITY : add snackbar if error becoz cool
       if (value == null || value.isEmpty  ) {
         return DATA_EMPTY_ERR;
       }
@@ -69,14 +69,13 @@ class _SearchState extends State<Search> {
                     child: const Text("Submit"),
                     onPressed: () async {
                       if (!_searchKey.currentState!.validate()) {
-                        //TODO : pass variable from validator to next page
                         return;
                       }
                       bool res = await DeliveryService.isDeliveryExists(deliveryNumberInput);
                       if (!res){
-                      ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text(DATA_NOT_FOUND_ERR)),
-                      );
+                        if (context.mounted){
+                          ScaffoldMessenger.of(context).showSnackBar(ErrorSnackbar(DATA_NOT_FOUND_ERR));
+                        }
                         return;
                       }
                       _navigateStopList();

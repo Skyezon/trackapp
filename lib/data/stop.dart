@@ -1,4 +1,5 @@
 import 'package:android/data/database.dart';
+import 'package:android/env.dart';
 
 class Stop {
   static const String tableName = "stops";
@@ -32,8 +33,8 @@ class Stop {
       cName : name,
       cAddress: address,
       cStopIndex : stopIndex,
-      cStopStartTime : stopStartTime,
-      cStopEndTime : stopEndTime,
+      cStopStartTime : stopStartTime?.toIso8601String(),
+      cStopEndTime : stopEndTime?.toIso8601String(),
       cUnloadingTime : unloadingTime,
       cDeliveryNumber : deliveryNumber
     };
@@ -42,6 +43,14 @@ class Stop {
 
   void setIndex(int newIndex){
    stopIndex = newIndex;
+  }
+
+  void setStartTime(DateTime newStartTime){
+    stopStartTime = newStartTime;
+  }
+
+  void setFinishTime(DateTime newEndTime){
+    stopEndTime = newEndTime;
   }
 
   Stop.fromMap(Map<String, Object?> map):
@@ -103,5 +112,30 @@ class Stop {
       whereArgs: [id]
     );
   }
+
+  static Future<void> startCurrentStopDelivery(Stop stopData) async{
+    if (stopData.stopStartTime != null){
+      return;
+    }
+    stopData.setStartTime(systemTime);
+    db = await getDatabase();
+    await db!.update(Stop.getTableName(), stopData.toMap(),
+    where: "${Stop.cId} = ${stopData.id}"
+    );
+
+
+  }
+
+  static Future<void> endCurrentStopDelivery(Stop stopData) async{
+    if (stopData.stopEndTime != null){
+      return;
+    }
+    stopData.setFinishTime(systemTime);
+    db = await getDatabase();
+    await db!.update(Stop.getTableName(), stopData.toMap(),
+    where: "${Stop.cId} = ${stopData.id}"
+    );
+  }
+
 
 }

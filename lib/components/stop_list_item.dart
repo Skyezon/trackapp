@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:android/data/stop.dart';
 import 'package:android/env.dart';
 import 'package:android/services/stop_service.dart';
 import 'package:flutter/material.dart';
 
 import '../data/delivery.dart';
+import 'my_snackbar.dart';
 
 class StopListItem extends StatefulWidget {
   final Key key;
@@ -11,7 +14,7 @@ class StopListItem extends StatefulWidget {
   final Delivery deliveryData;
   final Function refreshList;
 
-  StopListItem({required this.data,required this.deliveryData, required this.refreshList}): key = ValueKey(data.id);
+  StopListItem({required this.data,required this.deliveryData, required this.refreshList }): key = ValueKey(data.id);
 
   @override
   State<StopListItem> createState() => _StopListItemState();
@@ -19,30 +22,47 @@ class StopListItem extends StatefulWidget {
 
 class _StopListItemState extends State<StopListItem> {
   late String timeWindow = "";
+  late Timer _timer;
+
+  bool _isSnackbarShowen = false;
 
   _increaseOrder(Stop stopData) async {
     int indexAfter = stopData.stopIndex + 1;
     List<Stop>? stops = await widget.deliveryData.getStops();
     if (indexAfter > stops!.length){
       //error out of bound;
-      print("index now : ${stopData.stopIndex} target : $indexAfter");
-      print('error out of bound');
+      print('user is trying to change order out of bound, just ignore');
       return;
     }
-     await StopService.switchOrder(stopData.stopIndex, indexAfter, stopData.deliveryNumber);
-    widget.refreshList();
+    SnackBar? res = await StopService.switchOrder(stopData.stopIndex, indexAfter, stopData.deliveryNumber);
+    if (res != null){
+      //error
+      _showErrorSnackBar(res);
+    }
+     widget.refreshList();
+  }
+
+  _showErrorSnackBar(res){
+    print("ongoing delivery tried to change");
+    if (context.mounted && !_isSnackbarShowen){
+      _isSnackbarShowen = true;
+      ScaffoldMessenger.of(context).showSnackBar(res).closed.then((value) => _isSnackbarShowen = false);
+    }
   }
 
   _decreaseOrder(Stop stopData) async {
     int indexBefore = stopData.stopIndex -1;
     if (indexBefore <= 0){
       //error out of bound
-      print("index now : ${stopData.stopIndex} target : $indexBefore");
-      print("error dec out of bound");
+      print('user is trying to change order out of bound, just ignore');
       return;
     }
-     await StopService.switchOrder(stopData.stopIndex, indexBefore, stopData.deliveryNumber);
-    widget.refreshList();
+    SnackBar? res = await StopService.switchOrder(stopData.stopIndex, indexBefore, stopData.deliveryNumber);
+    if (res != null){
+      //error
+      _showErrorSnackBar(res);
+    }
+     widget.refreshList();
   }
 
   _getRequiredData() async{
@@ -55,15 +75,21 @@ class _StopListItemState extends State<StopListItem> {
   @override
   void initState() {
     _getRequiredData();
+    _timer = Timer.periodic(REALTIME_REFRESH_DURATION, (timer) => mounted? _getRequiredData(): null);
     super.initState();
   }
 
   @override
-  void didUpdateWidget(covariant StopListItem oldWidget) {
+  void didChangeDependencies() {
     _getRequiredData();
-    super.didUpdateWidget(oldWidget);
+    super.didChangeDependencies();
   }
 
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   bool _isFinished(){
     return (widget.data.stopEndTime != null);

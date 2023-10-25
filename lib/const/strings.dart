@@ -6,7 +6,8 @@ const LOGO = Text(
 );
 const INPUT_DELIVERY_INSTRUCTION = "Please Input Delivery Number";
 const FIRST_DELIVERY_TEXT = Text("Start Delivery");
-const WHILE_DELVIERY_TEXT = Text("Submit Stop Order");
+const WHILE_DELIVERY_TEXT = Text("Submit Stop Order");
+const BACK_TO_SEARCH_TEXT = Text("Back to search");
 
 const DATABASE_FILE_NAME = "trackapp.db";
 
@@ -19,3 +20,4 @@ const REORDER_BUTTON_TEXT = Text("Reorder stops");
 //Error
 const DATA_EMPTY_ERR = "Please fill the form";
 const DATA_NOT_FOUND_ERR = "Data not found";
+const INVALID_ORDER_CHANGE = "One or both stop have been started, cannot change order";

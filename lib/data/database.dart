@@ -2,6 +2,7 @@ import 'package:android/const/strings.dart';
 import 'package:android/data/delivery.dart';
 import 'package:android/data/matrix.dart';
 import 'package:android/data/stop.dart';
+import 'package:android/env.dart';
 import 'package:sqflite/sqflite.dart';
 
 Database? db;
@@ -70,6 +71,14 @@ Future<Database> initDatabase() async {
  void seedDatabase() async{
 
   db = await getDatabase();
+
+  if(NEW_DATABASE_EVERY_RUN){
+    String path = await getDatabasesPath();
+    await deleteDatabase(path + DATABASE_FILE_NAME);
+    db = null;
+    db = await getDatabase();
+  }
+
   String firstDeliveryNumber = "A91JK0S7";
   List<Map> maps =  await db!.query(Delivery.getTableName(),
   columns: [Delivery.cDeliveryNumber],
@@ -92,7 +101,7 @@ Future<Database> initDatabase() async {
      '$firstDeliveryNumber',
      '',
      '',
-     '${DateTime.now().add(const Duration(minutes: 5)).toIso8601String()}'
+     '${DateTime.now().add(const Duration(minutes: 0)).toIso8601String()}'
      )
       """);
      print("inserted delivery : ${firstDeliveryNumber}") ;

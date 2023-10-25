@@ -2,6 +2,7 @@
 import 'package:android/data/database.dart';
 import 'package:android/data/matrix.dart';
 import 'package:android/data/stop.dart';
+import 'package:android/env.dart';
 
 class Delivery {
   static const String tableName = "deliveries";
@@ -40,6 +41,14 @@ class Delivery {
 
   static String getTableName() {
     return tableName;
+  }
+
+  void setStartTime(DateTime newStartTime){
+    startTime =  newStartTime;
+  }
+
+  void setFinishTime(DateTime newEndTime){
+    finishTime = newEndTime;
   }
 
   Future<List<Stop>?> getStops() async{
@@ -92,5 +101,27 @@ class Delivery {
       return Delivery.fromMap(maps.first as Map<String,Object?>);
     }
     return null;
+  }
+
+  static Future<void> startDelivery(Delivery deliveryData) async{
+    if (deliveryData.startTime != null){
+      return;
+    }
+    db = await getDatabase();
+    deliveryData.setStartTime(systemTime);
+    await db!.update(Delivery.getTableName(), deliveryData.toMap(),
+    where: "${Delivery.cDeliveryNumber} = '${deliveryData.deliveryNumber}'"
+    );
+  }
+
+  static Future<void> endDelivery(Delivery deliveryData) async{
+    if (deliveryData.finishTime != null){
+      return;
+    }
+    db = await getDatabase();
+    deliveryData.setFinishTime(systemTime);
+    await db!.update(Delivery.getTableName(), deliveryData.toMap(),
+    where: "${Delivery.cDeliveryNumber} = '${deliveryData.deliveryNumber}'"
+    );
   }
 }

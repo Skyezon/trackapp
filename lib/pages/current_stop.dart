@@ -1,15 +1,19 @@
+import 'dart:async';
+
 import 'package:android/const/strings.dart';
-import 'package:android/data/delivery.dart';
+import 'package:android/env.dart';
+import 'package:android/services/delivery_service.dart';
 import 'package:android/services/stop_service.dart';
 import 'package:flutter/material.dart';
 
+import '../data/delivery.dart';
 import '../data/stop.dart';
 
 class CurrentDelivery extends StatefulWidget {
   final Stop currentStop;
   final Delivery deliveryData;
   final Stop? nextStop;
-  CurrentDelivery({super.key, required this.currentStop, required this.nextStop, required this.deliveryData});
+  const CurrentDelivery({super.key, required this.currentStop, required this.nextStop, required this.deliveryData});
 
   @override
   State<CurrentDelivery> createState() => _CurrentDeliveryState();
@@ -24,6 +28,7 @@ class _CurrentDeliveryState extends State<CurrentDelivery> {
   void initState() {
     _getRequiredData();
     super.initState();
+    Timer.periodic(REALTIME_REFRESH_DURATION, (Timer t) => mounted ?_getRequiredData() : null);
   }
 
   _getRequiredData() async {
@@ -41,85 +46,85 @@ class _CurrentDeliveryState extends State<CurrentDelivery> {
     });
   }
 
-  @override
-  void didUpdateWidget(covariant CurrentDelivery oldWidget) {
-    _getRequiredData();
-    super.didUpdateWidget(oldWidget);
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        title: LOGO,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-              flex: 2,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Column(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          title: LOGO,
+          centerTitle: true,
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+                flex: 2,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Column(
+                      children: [
+                        Text(widget.currentStop.name),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(widget.currentStop.address),
+                        ),
+                        Text(tw1)
+                      ],
+                    ),
+                    (() {
+                      if (widget.nextStop != null){
+                        return  Column(
+                          children: [
+                            Text(widget.nextStop!.name),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(widget.nextStop!.address),
+                            ),
+                            Text(tw2)
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }())
+
+                  ],
+                )),
+            Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(widget.currentStop.name),
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text(widget.currentStop.address),
-                      ),
-                      Text(tw1)
+                      ((){
+                        if(widget.nextStop == null){
+                          return const SizedBox.shrink();
+                        }
+                        return ElevatedButton(
+                            onPressed: () async {
+                              await StopService.endCurrentStopDelivery(widget.currentStop);
+                              if (context.mounted){
+                                Navigator.pop(context);
+                              }
+                            }, child: FINISH_CURRENT_STOP_BUTTON_TEXT);
+                      }())
+                      ,
+                      const SizedBox(height: 16),
+                      ElevatedButton(onPressed: () async {
+                        if (widget.nextStop == null){
+                          await StopService.endCurrentStopDelivery(widget.currentStop);
+                          await DeliveryService.endDelivery(widget.deliveryData);
+                        }
+                        if(context.mounted){
+                          Navigator.pop(context);
+                        }
+                      }, child: widget.nextStop == null ? FINISH_FINAL_STOP_BUTTON_TEXT: REORDER_BUTTON_TEXT),
+                      const SizedBox(height: 48)
                     ],
                   ),
-        (() {
-          if (widget.nextStop != null){
-            return  Column(
-              children: [
-                Text(widget.nextStop!.name),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(widget.nextStop!.address),
-                ),
-                Text(tw2)
-              ],
-            );
-          }
-          return const SizedBox.shrink();
-        }())
-
-                ],
-              )),
-          Expanded(
-              child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ((){
-                  if(widget.nextStop == null){
-                    return SizedBox.shrink();
-                  }
-                  return ElevatedButton(
-                      onPressed: () {
-                        //end current stop and go back
-                        Navigator.pop(context);
-                      }, child: FINISH_CURRENT_STOP_BUTTON_TEXT);
-                }())
-                ,
-                const SizedBox(height: 16),
-                ElevatedButton(onPressed: () {
-                  if (widget.nextStop == null){
-                    //end current stop
-                   //finish delivery
-                  }
-                  Navigator.pop(context);
-                  }, child: widget.nextStop == null ? FINISH_FINAL_STOP_BUTTON_TEXT: REORDER_BUTTON_TEXT)
-              ],
-            ),
-          ))
-        ],
-      ),
-    );
+                ))
+          ],
+        ),
+      );
   }
 }
